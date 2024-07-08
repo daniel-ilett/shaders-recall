@@ -1,7 +1,7 @@
 Shader "Recall/MaskObject"
 {
-    SubShader
-    {
+	SubShader
+	{
 		Tags
 		{
 			"RenderType" = "Opaque"
@@ -9,18 +9,28 @@ Shader "Recall/MaskObject"
 			"RenderPipeline" = "UniversalPipeline"
 		}
 
-        Pass
-        {
-            Tags
+		Pass
+		{
+			ZTest LEqual
+			ZWrite On
+
+			// This blend step is a hack because without it, overlapping objects do not set the correct mask value
+			// for some goddamn reason.
+			Blend SrcAlpha OneMinusSrcAlpha
+
+			Tags
 			{
 				"LightMode" = "UniversalForward"
 			}
 
-            HLSLPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
+			HLSLPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			#pragma target 3.0
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+			sampler2D _CameraDepthTexture;
 
             struct appdata
             {
@@ -29,19 +39,37 @@ Shader "Recall/MaskObject"
 
             struct v2f
             {
-                float4 positionCS : SV_Position;
+                //float4 positionCS : SV_Position;
+				float4 screenUV : TEXCOORD0;
+				float depth : DEPTH;
             };
 
-            v2f vert (appdata v)
+            v2f vert (appdata v, out float4 positionCS : SV_Position)
             {
                 v2f o;
-                o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
+                positionCS = TransformObjectToHClip(v.positionOS.xyz);
+				o.screenUV = ComputeScreenPos(positionCS);
+				// From: https://gamedev.stackexchange.com/questions/157922/depth-intersection-shader
+				o.depth = -mul(UNITY_MATRIX_MV, v.positionOS).z * _ProjectionParams.w;
                 return o;
             }
 
-            float4 frag (v2f i) : SV_Target
+			// Thanks to this for the note on using VPOS: https://gamedev.stackexchange.com/questions/157922/depth-intersection-shader
+            float4 frag (v2f i, float4 positionSS : VPOS) : SV_Target
             {
-				return 1.0f;
+				float2 screenUV = positionSS.xy / _ScreenParams.xy;
+				float screenDepth = Linear01Depth(tex2D(_CameraDepthTexture, screenUV).r, _ZBufferParams);
+
+				return step(i.depth, screenDepth);
+
+				/*
+				if (i.depth <= screenDepth)
+				{
+					return 1.0f;
+				}
+
+				return 0.0f;
+				*/
             }
             ENDHLSL
         }

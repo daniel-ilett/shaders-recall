@@ -3,29 +3,29 @@ using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class Greyscale : ScriptableRendererFeature
+public class RecallEffect : ScriptableRendererFeature
 {
-    GreyscaleRenderPass pass;
+    RecallRenderPass pass;
 
     public override void Create()
     {
-        var shader = Shader.Find("Recall/Greyscale");
+        var shader = Shader.Find("PostProcess/Recall");
 
         if (shader == null)
         {
-            Debug.LogError("Cannot find shader: \"Recall/Greyscale\".");
+            Debug.LogError("Cannot find shader: \"PostProcess/Recall\".");
             return;
         }
 
         var material = new Material(shader);
 
-        pass = new GreyscaleRenderPass(material);
-        name = "Greyscale";
+        pass = new RecallRenderPass(material);
+        name = "Recall";
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        var settings = VolumeManager.instance.stack.GetComponent<GreyscaleSettings>();
+        var settings = VolumeManager.instance.stack.GetComponent<RecallSettings>();
 
         if (settings != null && settings.IsActive())
         {
@@ -42,7 +42,7 @@ public class Greyscale : ScriptableRendererFeature
         base.Dispose(disposing);
     }
 
-    class GreyscaleRenderPass : ScriptableRenderPass
+    class RecallRenderPass : ScriptableRenderPass
     {
         private Material material;
         private RTHandle tempTexHandle;
@@ -50,11 +50,11 @@ public class Greyscale : ScriptableRendererFeature
 
         private RTHandle maskedObjectsHandle;
 
-        public GreyscaleRenderPass(Material material)
+        public RecallRenderPass(Material material)
         {
             this.material = material;
 
-            profilingSampler = new ProfilingSampler("Greyscale");
+            profilingSampler = new ProfilingSampler("Recall");
             renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
         }
 
@@ -109,16 +109,21 @@ public class Greyscale : ScriptableRendererFeature
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
+            if (renderingData.cameraData.isPreviewCamera)
+            {
+                return;
+            }
+
             CommandBuffer cmd = CommandBufferPool.Get();
 
-            // Set Greyscale effect properties.
-            var settings = VolumeManager.instance.stack.GetComponent<GreyscaleSettings>();
+            // Set Recall effect properties.
+            var settings = VolumeManager.instance.stack.GetComponent<RecallSettings>();
             material.SetFloat("_Strength", settings.strength.value);
 
             RTHandle cameraTargetHandle = renderingData.cameraData.renderer.cameraColorTargetHandle;
-            //RTHandle cameraDepthHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
+            RTHandle cameraDepthHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
 
-            // Perform the Blit operations for the Greyscale effect.
+            // Perform the Blit operations for the Recall effect.
             using (new ProfilingScope(cmd, profilingSampler))
             {
                 //Blit(cmd, cameraTargetHandle, tempTexHandle, material, 0);
@@ -142,22 +147,40 @@ public class Greyscale : ScriptableRendererFeature
                 camera.TryGetCullingParameters(out var cullingParameters);
                 var cullingResults = context.Cull(ref cullingParameters);
 
-                ShaderTagId shaderTagId = new ShaderTagId("UniversalForward");
-
                 var sortingSettings = new SortingSettings(camera);
-                DrawingSettings drawingSettings = new DrawingSettings(shaderTagId, sortingSettings)
-                {
-                    overrideShader = Shader.Find("Recall/MaskObject")
-                };
 
                 FilteringSettings filteringSettings = FilteringSettings.defaultValue;
                 filteringSettings.layerMask = settings.objectMask.value;
 
-                RendererListParams rendererParams = new RendererListParams(cullingResults, drawingSettings, filteringSettings);
+                ShaderTagId shaderTagId = new ShaderTagId("DepthOnly");
+
+                Material mat = new Material(Shader.Find("Recall/MaskObject"));
+                mat.SetTexture("_CameraDepthTexture", cameraDepthHandle);
+
+                DrawingSettings drawingSettingsLit = new DrawingSettings(shaderTagId, sortingSettings)
+                {
+                    //overrideShader = Shader.Find("Recall/MaskObject")
+                    overrideMaterial = mat
+                };
+
+                RendererListParams rendererParams = new RendererListParams(cullingResults, drawingSettingsLit, filteringSettings);
                 RendererList rendererList = context.CreateRendererList(ref rendererParams);
 
                 cmd.DrawRendererList(rendererList);
 
+                shaderTagId = new ShaderTagId("SRPDefaultUnlit");
+
+                DrawingSettings drawingSettingsUnlit = new DrawingSettings(shaderTagId, sortingSettings)
+                {
+                    overrideShader = Shader.Find("Recall/MaskObject")
+                };
+
+                rendererParams = new RendererListParams(cullingResults, drawingSettingsUnlit, filteringSettings);
+                rendererList = context.CreateRendererList(ref rendererParams);
+
+                cmd.DrawRendererList(rendererList);
+
+                // This didn't work, but I don't know why. Something to do with Submit I guess.
                 //context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
                 //context.Submit();
 

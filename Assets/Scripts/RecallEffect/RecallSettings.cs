@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 [System.Serializable, VolumeComponentMenu("Recall/Greyscale")]
-public sealed class GreyscaleSettings : VolumeComponent, IPostProcessComponent
+public sealed class RecallSettings : VolumeComponent, IPostProcessComponent
 {
     [Tooltip("Greyscale effect intensity.")]
     public ClampedFloatParameter strength = new ClampedFloatParameter(0.0f, 0.0f, 1.0f);
