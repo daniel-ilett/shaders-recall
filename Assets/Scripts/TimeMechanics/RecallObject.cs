@@ -15,7 +15,13 @@ public class RecallObject : MonoBehaviour
 
     private new Rigidbody rigidbody = null;
 
+    public event RecallStartedEventHandler RecallStarted;
+    public event RecalledFrameEventHandler RecalledFrame;
+    public event EventHandler RecallEnded;
     public event EventHandler RecallBufferExpired;
+
+    public delegate void RecallStartedEventHandler(object sender, List<RecallFrame> frames);
+    public delegate void RecalledFrameEventHandler(object sender, RecallFrame frame);
 
     private void Start()
     {
@@ -52,7 +58,8 @@ public class RecallObject : MonoBehaviour
                     RecallFrame();
                     break;
                 }
-            case RecallState.Pause:
+            case RecallState.EnterPause:
+            case RecallState.ExitPause:
                 {
                     Pause();
                     break;
@@ -79,6 +86,8 @@ public class RecallObject : MonoBehaviour
 
         transform.position = frame.position;
         transform.rotation = frame.rotation;
+
+        RecalledFrame?.Invoke(this, frame);
 
         frames.RemoveAt(frameIndex);
 
@@ -114,11 +123,18 @@ public class RecallObject : MonoBehaviour
                         rigidbody.angularVelocity = Vector3.zero;
                     }
 
+                    RecallEnded?.Invoke(this, EventArgs.Empty);
+
                     break;
                 }
             case RecallState.Recall:
-            case RecallState.Pause:
                 {
+                    break;
+                }
+            case RecallState.EnterPause:
+                {
+                    RecallStarted?.Invoke(this, frames);
+
                     gameObject.layer = recallLayer;
 
                     if (rigidbody != null)
@@ -126,6 +142,11 @@ public class RecallObject : MonoBehaviour
                         rigidbody.isKinematic = true;
                     }
 
+                    break;
+                }
+            case RecallState.ExitPause:
+                {
+                    gameObject.layer = defaultLayer;
                     break;
                 }
         }

@@ -6,5 +6,6 @@ public enum RecallState
 {
     Recall,
     Advance,
-    Pause
+    EnterPause,
+    ExitPause
 }

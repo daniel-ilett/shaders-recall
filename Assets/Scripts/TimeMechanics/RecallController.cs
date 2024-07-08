@@ -26,21 +26,24 @@ public class RecallController : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetMouseButtonDown(0) && pauseRoutine == null)
+        if(Input.GetMouseButtonDown(0))
         {
-            isRecall = !isRecall;
+            if(pauseRoutine == null)
+            {
+                isRecall = !isRecall;
 
-            if (isRecall)
-            {
-                recallEffect.active = true;
-                pauseRoutine = StartCoroutine(PauseAnimation(RecallState.Pause, RecallState.Recall));
-                testObject.RecallBufferExpired += ExpireRecallMemory;
-            }
-            else
-            {
-                recallEffect.active = false;
-                pauseRoutine = StartCoroutine(PauseAnimation(RecallState.Pause, RecallState.Advance));
-                testObject.RecallBufferExpired -= ExpireRecallMemory;
+                if (isRecall)
+                {
+                    recallEffect.active = true;
+                    pauseRoutine = StartCoroutine(PauseAnimation(RecallState.EnterPause, RecallState.Recall));
+                    testObject.RecallBufferExpired += ExpireRecallMemory;
+                }
+                else
+                {
+                    recallEffect.active = false;
+                    pauseRoutine = StartCoroutine(PauseAnimation(RecallState.ExitPause, RecallState.Advance));
+                    testObject.RecallBufferExpired -= ExpireRecallMemory;
+                }
             }
         }
     }
@@ -49,7 +52,7 @@ public class RecallController : MonoBehaviour
     {
         recallEffect.active = false;
         isRecall = false;
-        pauseRoutine = StartCoroutine(PauseAnimation(RecallState.Pause, RecallState.Advance));
+        pauseRoutine = StartCoroutine(PauseAnimation(RecallState.ExitPause, RecallState.Advance));
         testObject.RecallBufferExpired -= ExpireRecallMemory;
     }
 
