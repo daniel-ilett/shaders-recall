@@ -60,7 +60,7 @@ Shader "Recall/MaskObject"
 				float2 screenUV = positionSS.xy / _ScreenParams.xy;
 				float screenDepth = Linear01Depth(tex2D(_CameraDepthTexture, screenUV).r, _ZBufferParams);
 
-				return step(i.depth, screenDepth);
+				return step(i.depth - 0.0001f, screenDepth);
 
 				/*
 				if (i.depth <= screenDepth)

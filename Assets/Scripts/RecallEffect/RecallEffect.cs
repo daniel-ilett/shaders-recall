@@ -155,7 +155,7 @@ public class RecallEffect : ScriptableRendererFeature
                 ShaderTagId shaderTagId = new ShaderTagId("UniversalForward");
 
                 Material mat = new Material(Shader.Find("Recall/MaskObject"));
-                mat.SetTexture("_CameraDepthTexture", cameraDepthHandle);
+                mat.SetTexture("_John", cameraDepthHandle);
 
                 DrawingSettings drawingSettingsLit = new DrawingSettings(shaderTagId, sortingSettings)
                 {
