@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e57d92376e6fb414ba8a4f44b895f78a, type: 3}
   m_Name: GreyscaleSettings
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   strength:
     m_OverrideState: 1
     m_Value: 1
@@ -21,6 +21,24 @@ MonoBehaviour:
     m_Value:
       serializedVersion: 2
       m_Bits: 64
+  wipeOriginPoint:
+    m_OverrideState: 1
+    m_Value: {x: 0.5, y: 0.5}
+  wipeSize:
+    m_OverrideState: 1
+    m_Value: 0
+  wipeThickness:
+    m_OverrideState: 1
+    m_Value: 0.007
+  noiseScale:
+    m_OverrideState: 1
+    m_Value: 60
+  noiseStrength:
+    m_OverrideState: 1
+    m_Value: 0.27
+  edgeColor:
+    m_OverrideState: 0
+    m_Value: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

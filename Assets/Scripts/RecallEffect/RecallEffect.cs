@@ -46,7 +46,7 @@ public class RecallEffect : ScriptableRendererFeature
     {
         private Material material;
         private RTHandle tempTexHandle;
-        private RTHandle tempDepthHandle;
+        //private RTHandle tempDepthHandle;
 
         private RTHandle maskedObjectsHandle;
 
@@ -119,6 +119,12 @@ public class RecallEffect : ScriptableRendererFeature
             // Set Recall effect properties.
             var settings = VolumeManager.instance.stack.GetComponent<RecallSettings>();
             material.SetFloat("_Strength", settings.strength.value);
+            material.SetVector("_WipeOriginPoint", settings.wipeOriginPoint.value);
+            material.SetFloat("_WipeSize", settings.wipeSize.value);
+            material.SetFloat("_WipeThickness", settings.wipeThickness.value);
+            material.SetFloat("_NoiseScale", settings.noiseScale.value);
+            material.SetFloat("_NoiseStrength", settings.noiseStrength.value);
+            material.SetColor("_EdgeColor", settings.edgeColor.value);
 
             RTHandle cameraTargetHandle = renderingData.cameraData.renderer.cameraColorTargetHandle;
             RTHandle cameraDepthHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
