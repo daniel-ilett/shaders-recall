@@ -5,6 +5,9 @@ using UnityEngine;
 
 public class RecallObject : MonoBehaviour
 {
+    [SerializeField] private int defaultLayer;
+    [SerializeField] private int recallLayer;
+
     private static int maxFrameCount = 500;
 
     private List<RecallFrame> frames = new List<RecallFrame>();
@@ -21,7 +24,23 @@ public class RecallObject : MonoBehaviour
 
     private void Update()
     {
-        switch(recallState)
+        if(rigidbody == null)
+        {
+            RunRecallState();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (rigidbody != null)
+        {
+            RunRecallState();
+        }
+    }
+
+    private void RunRecallState()
+    {
+        switch (recallState)
         {
             case RecallState.Advance:
                 {
@@ -87,6 +106,7 @@ public class RecallObject : MonoBehaviour
         {
             case RecallState.Advance:
                 {
+                    gameObject.layer = defaultLayer;
                     if(rigidbody != null)
                     {
                         rigidbody.isKinematic = false;
@@ -99,6 +119,8 @@ public class RecallObject : MonoBehaviour
             case RecallState.Recall:
             case RecallState.Pause:
                 {
+                    gameObject.layer = recallLayer;
+
                     if (rigidbody != null)
                     {
                         rigidbody.isKinematic = true;

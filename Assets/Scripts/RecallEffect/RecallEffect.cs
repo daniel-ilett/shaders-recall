@@ -152,7 +152,7 @@ public class RecallEffect : ScriptableRendererFeature
                 FilteringSettings filteringSettings = FilteringSettings.defaultValue;
                 filteringSettings.layerMask = settings.objectMask.value;
 
-                ShaderTagId shaderTagId = new ShaderTagId("DepthOnly");
+                ShaderTagId shaderTagId = new ShaderTagId("UniversalForward");
 
                 Material mat = new Material(Shader.Find("Recall/MaskObject"));
                 mat.SetTexture("_CameraDepthTexture", cameraDepthHandle);
