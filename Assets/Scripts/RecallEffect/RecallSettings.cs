@@ -26,7 +26,7 @@ public sealed class RecallSettings : VolumeComponent, IPostProcessComponent
     [Tooltip("Noise strength for the screen wipe effect.")]
     public ClampedFloatParameter noiseStrength = new ClampedFloatParameter(0.1f, 0.0f, 1.0f);
 
-    [Tooltip("Color of the bundary edges.")]
+    [Tooltip("Color of the boundary edges.")]
     public ColorParameter edgeColor = new ColorParameter(Color.yellow);
 
     public bool IsActive()

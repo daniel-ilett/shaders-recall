@@ -9,17 +9,7 @@ public class RecallEffect : ScriptableRendererFeature
 
     public override void Create()
     {
-        var shader = Shader.Find("PostProcess/Recall");
-
-        if (shader == null)
-        {
-            Debug.LogError("Cannot find shader: \"PostProcess/Recall\".");
-            return;
-        }
-
-        var material = new Material(shader);
-
-        pass = new RecallRenderPass(material);
+        pass = new RecallRenderPass();
         name = "Recall";
     }
 
@@ -33,7 +23,6 @@ public class RecallEffect : ScriptableRendererFeature
             //pass.ConfigureInput(ScriptableRenderPassInput.Normal);
             renderer.EnqueuePass(pass);
         }
-
     }
 
     protected override void Dispose(bool disposing)
@@ -50,12 +39,23 @@ public class RecallEffect : ScriptableRendererFeature
 
         private RTHandle maskedObjectsHandle;
 
-        public RecallRenderPass(Material material)
+        public RecallRenderPass()
         {
-            this.material = material;
-
             profilingSampler = new ProfilingSampler("Recall");
             renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+        }
+
+        private void CreateMaterial()
+        {
+            var shader = Shader.Find("PostProcess/Recall");
+
+            if (shader == null)
+            {
+                Debug.LogError("Cannot find shader: \"PostProcess/Recall\".");
+                return;
+            }
+
+            material = new Material(shader);
         }
 
         private static RenderTextureDescriptor GetCopyPassDescriptor(RenderTextureDescriptor descriptor)
@@ -112,6 +112,11 @@ public class RecallEffect : ScriptableRendererFeature
             if (renderingData.cameraData.isPreviewCamera)
             {
                 return;
+            }
+
+            if(material == null)
+            {
+                CreateMaterial(); 
             }
 
             CommandBuffer cmd = CommandBufferPool.Get();

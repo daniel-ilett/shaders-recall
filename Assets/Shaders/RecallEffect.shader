@@ -10,6 +10,7 @@
 
 		HLSLINCLUDE
 
+		// Code 'liberated' from Shader Graph's Simple Noise node.
 		inline float randomValue(float2 uv)
 		{
 			return frac(sin(dot(uv, float2(12.9898, 78.233)))*43758.5453);
@@ -120,15 +121,20 @@
 				// Perform screen wipe to decide between greyscale colors.
 				float2 offset = i.texcoord - _WipeOriginPoint;
 				offset.x *= _ScreenParams.x / _ScreenParams.y;
-				float distance = length(offset) + perlinNoise(i.texcoord, _NoiseScale) * _NoiseStrength;
-				float isInWipeRadius = saturate(1.0f - step(_WipeSize, distance) - mask);
+				float noise = perlinNoise(offset, _NoiseScale);
+				float distance = length(offset) + noise * _NoiseStrength;
 
-				float wipeRadiusEdge = step(_WipeSize - _WipeThickness, distance) * isInWipeRadius;
+				float isInWipeRadius = saturate(1.0f - step(_WipeSize, distance));
 
-				col.rgb = lerp(col.rgb, Luminance(col.rgb), _Strength * (1.0f - mask) * isInWipeRadius);
-				col.rgb = lerp(col.rgb, _EdgeColor, wipeRadiusEdge);
+				float3 recallTint = isInWipeRadius * mask * smoothstep(0.9f, 1.0f, (sin((noise * 10 + _Time.y) * PI) + 1.0f) * 0.5f) * _EdgeColor * 0.25f;
+				float greyscaleColor = Luminance(col.rgb);
 
-				// Perform outline detection step
+				col.rgb = lerp(col.rgb + recallTint, greyscaleColor, _Strength * (1.0f - mask) * isInWipeRadius);
+
+				float isWipeRadiusEdge = step(_WipeSize - _WipeThickness, distance) * isInWipeRadius;
+				col.rgb = lerp(col.rgb, _EdgeColor, isWipeRadiusEdge);
+
+				// Perform outline detection step.
 				float2 leftUV = i.texcoord + float2(1.0f / -_ScreenParams.x, 0.0f);
 				float2 rightUV = i.texcoord + float2(1.0f / _ScreenParams.x, 0.0f);
 				float2 bottomUV = i.texcoord + float2(0.0f, 1.0f / -_ScreenParams.y);
