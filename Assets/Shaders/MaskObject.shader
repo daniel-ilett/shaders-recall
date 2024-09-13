@@ -14,8 +14,8 @@ Shader "Recall/MaskObject"
 			ZTest LEqual
 			ZWrite On
 
-			// Blending means that we can render black and not worry about needing to check if we
-			// already have white in the mask.
+			// Blending means that we can render black and not worry about needing to check
+			// if we already have white in the mask.
 			Blend SrcColor OneMinusSrcColor
 
 			Tags

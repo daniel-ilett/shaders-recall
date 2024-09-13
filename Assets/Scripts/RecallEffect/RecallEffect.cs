@@ -20,7 +20,6 @@ public class RecallEffect : ScriptableRendererFeature
         if (settings != null && settings.IsActive())
         {
             pass.ConfigureInput(ScriptableRenderPassInput.Depth);
-            //pass.ConfigureInput(ScriptableRenderPassInput.Normal);
             renderer.EnqueuePass(pass);
         }
     }
@@ -35,7 +34,6 @@ public class RecallEffect : ScriptableRendererFeature
     {
         private Material material;
         private RTHandle tempTexHandle;
-        //private RTHandle tempDepthHandle;
 
         private RTHandle maskedObjectsHandle;
 
@@ -58,54 +56,6 @@ public class RecallEffect : ScriptableRendererFeature
             material = new Material(shader);
         }
 
-        /*
-        private static RenderTextureDescriptor GetCopyPassDescriptor(RenderTextureDescriptor descriptor)
-        {
-            descriptor.msaaSamples = 1;
-            descriptor.depthBufferBits = (int)DepthBits.None;
-
-            return descriptor;
-        }
-
-        private static RenderTextureDescriptor GetMaskPassDescriptor(RenderTextureDescriptor descriptor)
-        {
-            descriptor.msaaSamples = 1;
-            descriptor.depthBufferBits = (int)DepthBits.None;
-            descriptor.colorFormat = RenderTextureFormat.R8;
-
-            return descriptor;
-        }
-        */
-
-        /*
-        private static RenderTextureDescriptor GetCopyPassDepthDescriptor(RenderTextureDescriptor descriptor)
-        {
-            descriptor.msaaSamples = 1;
-            descriptor.depthStencilFormat = GraphicsFormat.D24_UNorm_S8_UInt;
-            descriptor.stencilFormat = GraphicsFormat.R8_UInt;
-            descriptor.depthBufferBits = (int)DepthBits.Depth32;
-
-            return descriptor;
-        }
-        */
-
-        /*
-        public static bool CreateHandleWithDepthStencil(
-            ref RTHandle handle,
-            in RenderTextureDescriptor descriptor,
-            FilterMode filterMode = FilterMode.Point,
-            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            bool isShadowMap = false,
-            int anisoLevel = 1,
-            float mipMapBias = 0,
-            string name = "")
-        {
-            handle?.Release();
-            handle = CustomRTHandles.Alloc(descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name);
-            return true;
-        }
-        */
-
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
         {
             ResetTarget();
@@ -114,15 +64,9 @@ public class RecallEffect : ScriptableRendererFeature
 
             descriptor.msaaSamples = 1;
             descriptor.depthBufferBits = (int)DepthBits.None;
-
             RenderingUtils.ReAllocateIfNeeded(ref tempTexHandle, descriptor);
-            //RenderingUtils.ReAllocateIfNeeded(ref tempDepthHandle, GetCopyPassDepthDescriptor(tempTexDescriptor));
-
-            //CreateHandleWithDepthStencil(ref tempTexHandle, GetCopyPassDescriptor(tempTexDescriptor));
-            //CreateHandleWithDepthStencil(ref tempDepthHandle, GetCopyPassDepthDescriptor(tempTexDescriptor));
 
             descriptor.colorFormat = RenderTextureFormat.R8;
-
             RenderingUtils.ReAllocateIfNeeded(ref maskedObjectsHandle, descriptor);
 
             base.Configure(cmd, cameraTextureDescriptor);
@@ -157,43 +101,16 @@ public class RecallEffect : ScriptableRendererFeature
             material.SetColor("_EdgeColor", settings.edgeColor.value);
 
             RTHandle cameraTargetHandle = renderingData.cameraData.renderer.cameraColorTargetHandle;
-            //RTHandle cameraDepthHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
-
+            
             // Perform the Blit operations for the Recall effect.
             using (new ProfilingScope(cmd, profilingSampler))
             {
-                //Blit(cmd, cameraTargetHandle, tempTexHandle, material, 0);
-                //Blit(cmd, tempTexHandle, cameraTargetHandle);
-
-
-
-
-                // Maybe we can do something here where we directly try to DrawRenderers
-                // for only the recall objects directly into a new texture?
-                // We can clear the texture then draw the objects in pure white.
-
-
-
-                // Aaaaaalso, what if we do this in Unity 2021? Does it just work?
-
                 CoreUtils.SetRenderTarget(cmd, maskedObjectsHandle);
                 CoreUtils.ClearRenderTarget(cmd, ClearFlag.All, Color.black);
-
-
-
-
-
-
-
-
-
 
                 var camera = renderingData.cameraData.camera;
                 camera.TryGetCullingParameters(out var cullingParameters);
                 var cullingResults = context.Cull(ref cullingParameters);
-
-
-
 
                 var sortingSettings = new SortingSettings(camera);
 
@@ -203,11 +120,9 @@ public class RecallEffect : ScriptableRendererFeature
                 ShaderTagId shaderTagId = new ShaderTagId("UniversalForward");
 
                 Material mat = new Material(Shader.Find("Recall/MaskObject"));
-                //mat.SetTexture("_John", cameraDepthHandle);
 
                 DrawingSettings drawingSettingsLit = new DrawingSettings(shaderTagId, sortingSettings)
                 {
-                    //overrideShader = Shader.Find("Recall/MaskObject")
                     overrideMaterial = mat
                 };
 
@@ -215,19 +130,6 @@ public class RecallEffect : ScriptableRendererFeature
                 RendererList rendererList = context.CreateRendererList(ref rendererParams);
 
                 cmd.DrawRendererList(rendererList);
-
-
-
-
-
-
-
-
-
-
-
-
-
 
                 shaderTagId = new ShaderTagId("SRPDefaultUnlit");
 
@@ -241,79 +143,10 @@ public class RecallEffect : ScriptableRendererFeature
 
                 cmd.DrawRendererList(rendererList);
 
-
-
-
-
-
-
-
-
-
-
-
-
-                // This didn't work, but I don't know why. Something to do with Submit I guess.
-                //context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
-                //context.Submit();
-
                 material.SetTexture("_MaskedObjects", maskedObjectsHandle);
 
                 Blitter.BlitCameraTexture(cmd, cameraTargetHandle, tempTexHandle);
                 Blitter.BlitCameraTexture(cmd, tempTexHandle, cameraTargetHandle, material, 0);
-
-
-
-
-
-
-
-
-                /*
-                Debug.Log("cameraDepthHandle stencil format: " + cameraDepthHandle.rt.stencilFormat);
-                Debug.Log("Temp depth handle stencil format: " + tempDepthHandle.rt.stencilFormat);
-
-                CoreUtils.SetRenderTarget(cmd, tempTexHandle);
-                Blitter.BlitTexture(cmd, cameraTargetHandle, new Vector4(1, 1, 0, 0), 0, false);
-
-                CoreUtils.SetRenderTarget(cmd, tempDepthHandle);
-                Blitter.BlitTexture(cmd, cameraDepthHandle, new Vector4(1, 1, 0, 0), 0, false);
-
-                material.SetTexture("_DepthTexture", tempDepthHandle, RenderTextureSubElement.Stencil);
-
-                CoreUtils.SetRenderTarget(cmd, cameraTargetHandle);
-                Blitter.BlitTexture(cmd, tempTexHandle, new Vector4(1, 1, 0, 0), material, 0);
-                */
-
-
-
-
-
-
-
-
-
-
-
-                /*
-                CoreUtils.SetRenderTarget(cmd, tempTexHandle);
-                Blitter.BlitColorAndDepth(cmd, cameraTargetHandle, cameraDepthHandle.rt, new Vector4(1, 1, 0, 0), 0, true);
-
-                CoreUtils.SetRenderTarget(cmd, cameraTargetHandle);
-                Blitter.BlitTexture(cmd, tempDepthHandle, new Vector4(1, 1, 0, 0), material, 0);
-                */
-
-
-
-
-
-                /*
-                CoreUtils.SetRenderTarget(cmd, tempTexHandle);
-                Blitter.BlitTexture(cmd, cameraTargetHandle, new Vector4(1, 1, 0, 0), 0, false);
-
-                CoreUtils.SetRenderTarget(cmd, cameraTargetHandle);
-                Blitter.BlitTexture(cmd, tempTexHandle, new Vector4(1, 1, 0, 0), material, 0);
-                */
             }
 
             context.ExecuteCommandBuffer(cmd);
