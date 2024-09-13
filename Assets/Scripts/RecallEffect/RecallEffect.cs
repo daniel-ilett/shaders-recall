@@ -47,17 +47,18 @@ public class RecallEffect : ScriptableRendererFeature
 
         private void CreateMaterial()
         {
-            var shader = Shader.Find("PostProcess/Recall");
+            var shader = Shader.Find("DanielIlett/Recall");
 
             if (shader == null)
             {
-                Debug.LogError("Cannot find shader: \"PostProcess/Recall\".");
+                Debug.LogError("Cannot find shader: \"DanielIlett/Recall\".");
                 return;
             }
 
             material = new Material(shader);
         }
 
+        /*
         private static RenderTextureDescriptor GetCopyPassDescriptor(RenderTextureDescriptor descriptor)
         {
             descriptor.msaaSamples = 1;
@@ -66,6 +67,17 @@ public class RecallEffect : ScriptableRendererFeature
             return descriptor;
         }
 
+        private static RenderTextureDescriptor GetMaskPassDescriptor(RenderTextureDescriptor descriptor)
+        {
+            descriptor.msaaSamples = 1;
+            descriptor.depthBufferBits = (int)DepthBits.None;
+            descriptor.colorFormat = RenderTextureFormat.R8;
+
+            return descriptor;
+        }
+        */
+
+        /*
         private static RenderTextureDescriptor GetCopyPassDepthDescriptor(RenderTextureDescriptor descriptor)
         {
             descriptor.msaaSamples = 1;
@@ -75,7 +87,9 @@ public class RecallEffect : ScriptableRendererFeature
 
             return descriptor;
         }
+        */
 
+        /*
         public static bool CreateHandleWithDepthStencil(
             ref RTHandle handle,
             in RenderTextureDescriptor descriptor,
@@ -90,19 +104,26 @@ public class RecallEffect : ScriptableRendererFeature
             handle = CustomRTHandles.Alloc(descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name);
             return true;
         }
+        */
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
         {
             ResetTarget();
 
-            var tempTexDescriptor = cameraTextureDescriptor;
-            RenderingUtils.ReAllocateIfNeeded(ref tempTexHandle, GetCopyPassDescriptor(tempTexDescriptor));
+            var descriptor = cameraTextureDescriptor;
+
+            descriptor.msaaSamples = 1;
+            descriptor.depthBufferBits = (int)DepthBits.None;
+
+            RenderingUtils.ReAllocateIfNeeded(ref tempTexHandle, descriptor);
             //RenderingUtils.ReAllocateIfNeeded(ref tempDepthHandle, GetCopyPassDepthDescriptor(tempTexDescriptor));
 
             //CreateHandleWithDepthStencil(ref tempTexHandle, GetCopyPassDescriptor(tempTexDescriptor));
             //CreateHandleWithDepthStencil(ref tempDepthHandle, GetCopyPassDepthDescriptor(tempTexDescriptor));
 
-            RenderingUtils.ReAllocateIfNeeded(ref maskedObjectsHandle, GetCopyPassDescriptor(tempTexDescriptor));
+            descriptor.colorFormat = RenderTextureFormat.R8;
+
+            RenderingUtils.ReAllocateIfNeeded(ref maskedObjectsHandle, descriptor);
 
             base.Configure(cmd, cameraTextureDescriptor);
         }
@@ -129,10 +150,14 @@ public class RecallEffect : ScriptableRendererFeature
             material.SetFloat("_WipeThickness", settings.wipeThickness.value);
             material.SetFloat("_NoiseScale", settings.noiseScale.value);
             material.SetFloat("_NoiseStrength", settings.noiseStrength.value);
+            material.SetFloat("_HighlightSize", settings.highlightSize.value);
+            material.SetVector("_HighlightStrength", settings.highlightStrength.value);
+            material.SetFloat("_HighlightSpeed", settings.highlightSpeed.value);
+            material.SetVector("_HighlightThresholds", settings.highlightThresholds.value);
             material.SetColor("_EdgeColor", settings.edgeColor.value);
 
             RTHandle cameraTargetHandle = renderingData.cameraData.renderer.cameraColorTargetHandle;
-            RTHandle cameraDepthHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
+            //RTHandle cameraDepthHandle = renderingData.cameraData.renderer.cameraDepthTargetHandle;
 
             // Perform the Blit operations for the Recall effect.
             using (new ProfilingScope(cmd, profilingSampler))
@@ -154,19 +179,31 @@ public class RecallEffect : ScriptableRendererFeature
                 CoreUtils.SetRenderTarget(cmd, maskedObjectsHandle);
                 CoreUtils.ClearRenderTarget(cmd, ClearFlag.All, Color.black);
 
+
+
+
+
+
+
+
+
+
                 var camera = renderingData.cameraData.camera;
                 camera.TryGetCullingParameters(out var cullingParameters);
                 var cullingResults = context.Cull(ref cullingParameters);
 
+
+
+
                 var sortingSettings = new SortingSettings(camera);
 
-                FilteringSettings filteringSettings = FilteringSettings.defaultValue;
-                filteringSettings.layerMask = settings.objectMask.value;
+                FilteringSettings filteringSettings = 
+                    new FilteringSettings(RenderQueueRange.all, settings.objectMask.value);
 
                 ShaderTagId shaderTagId = new ShaderTagId("UniversalForward");
 
                 Material mat = new Material(Shader.Find("Recall/MaskObject"));
-                mat.SetTexture("_John", cameraDepthHandle);
+                //mat.SetTexture("_John", cameraDepthHandle);
 
                 DrawingSettings drawingSettingsLit = new DrawingSettings(shaderTagId, sortingSettings)
                 {
@@ -179,11 +216,24 @@ public class RecallEffect : ScriptableRendererFeature
 
                 cmd.DrawRendererList(rendererList);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
                 shaderTagId = new ShaderTagId("SRPDefaultUnlit");
 
                 DrawingSettings drawingSettingsUnlit = new DrawingSettings(shaderTagId, sortingSettings)
                 {
-                    overrideShader = Shader.Find("Recall/MaskObject")
+                    overrideMaterial = mat
                 };
 
                 rendererParams = new RendererListParams(cullingResults, drawingSettingsUnlit, filteringSettings);
@@ -191,17 +241,26 @@ public class RecallEffect : ScriptableRendererFeature
 
                 cmd.DrawRendererList(rendererList);
 
+
+
+
+
+
+
+
+
+
+
+
+
                 // This didn't work, but I don't know why. Something to do with Submit I guess.
                 //context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
                 //context.Submit();
 
                 material.SetTexture("_MaskedObjects", maskedObjectsHandle);
 
-                CoreUtils.SetRenderTarget(cmd, tempTexHandle);
-                Blitter.BlitTexture(cmd, cameraTargetHandle, new Vector4(1, 1, 0, 0), 0, false);
-
-                CoreUtils.SetRenderTarget(cmd, cameraTargetHandle);
-                Blitter.BlitTexture(cmd, tempTexHandle, new Vector4(1, 1, 0, 0), material, 0);
+                Blitter.BlitCameraTexture(cmd, cameraTargetHandle, tempTexHandle);
+                Blitter.BlitCameraTexture(cmd, tempTexHandle, cameraTargetHandle, material, 0);
 
 
 
@@ -265,6 +324,7 @@ public class RecallEffect : ScriptableRendererFeature
         public void Dispose()
         {
             tempTexHandle?.Release();
+            maskedObjectsHandle?.Release();
         }
     }
 }

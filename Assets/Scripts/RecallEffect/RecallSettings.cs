@@ -26,6 +26,19 @@ public sealed class RecallSettings : VolumeComponent, IPostProcessComponent
     [Tooltip("Noise strength for the screen wipe effect.")]
     public ClampedFloatParameter noiseStrength = new ClampedFloatParameter(0.1f, 0.0f, 1.0f);
 
+    [Tooltip("Size of the swirling highlights on recalled objects.")]
+    public ClampedFloatParameter highlightSize = new ClampedFloatParameter(10.0f, 1.0f, 15.0f);
+
+    [Tooltip("Strength of the swirling highlights on recalled objects.\n" +
+        "x = tint applied to whole object.\ny = tint applied to swirls.")]
+    public Vector2Parameter highlightStrength = new Vector2Parameter(new Vector2(0.05f, 0.2f));
+
+    [Tooltip("Speed of the swirling highlights on recalled objects.")]
+    public ClampedFloatParameter highlightSpeed = new ClampedFloatParameter(0.1f, 0.0f, 1.0f);
+
+    [Tooltip("Smoothstep falloff thresholds for the swirling highlights on recalled objects.")]
+    public Vector2Parameter highlightThresholds = new Vector2Parameter(new Vector2(0.9f, 1.0f));
+
     [Tooltip("Color of the boundary edges.")]
     public ColorParameter edgeColor = new ColorParameter(Color.yellow);
 

@@ -1,4 +1,4 @@
-﻿Shader "PostProcess/Recall"
+﻿Shader "DanielIlett/Recall"
 {
 	SubShader
 	{
@@ -80,11 +80,11 @@
 			#pragma vertex Vert
 			#pragma fragment frag
 
-#if SHADER_API_D3D11
-		#define STENCIL_CHANNEL g
-#else
-		#define STENCIL_CHANNEL r
-#endif
+//#if SHADER_API_D3D11
+//		#define STENCIL_CHANNEL g
+//#else
+//		#define STENCIL_CHANNEL r
+//#endif
 
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
@@ -101,6 +101,10 @@
 			float _WipeThickness;
 			float _NoiseScale;
 			float _NoiseStrength;
+			float _HighlightSize;
+			float2 _HighlightStrength;
+			float _HighlightSpeed;
+			float2 _HighlightThresholds;
 			float3 _EdgeColor;
 
             float4 frag (Varyings i) : SV_Target
@@ -126,7 +130,8 @@
 
 				float isInWipeRadius = saturate(1.0f - step(_WipeSize, distance));
 
-				float3 recallTint = isInWipeRadius * mask * smoothstep(0.9f, 1.0f, (sin((noise * 10 + _Time.y) * PI) + 1.0f) * 0.5f) * _EdgeColor * 0.25f;
+				float timer = (sin((noise * _HighlightSize + _Time.y * _HighlightSpeed) * PI) + 1.0f) * 0.5f;
+				float3 recallTint = isInWipeRadius * mask * (_HighlightStrength.x + smoothstep(_HighlightThresholds.x, _HighlightThresholds.y, timer)  * _HighlightStrength.y) * _EdgeColor;
 				float greyscaleColor = Luminance(col.rgb);
 
 				col.rgb = lerp(col.rgb + recallTint, greyscaleColor, _Strength * (1.0f - mask) * isInWipeRadius);

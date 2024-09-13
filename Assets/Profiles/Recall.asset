@@ -26,7 +26,7 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   wipeSize:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.49
   wipeThickness:
     m_OverrideState: 1
     m_Value: 0.007
@@ -36,8 +36,20 @@ MonoBehaviour:
   noiseStrength:
     m_OverrideState: 1
     m_Value: 0.27
+  highlightSize:
+    m_OverrideState: 1
+    m_Value: 5
+  highlightStrength:
+    m_OverrideState: 1
+    m_Value: {x: 0.1, y: 0.25}
+  highlightSpeed:
+    m_OverrideState: 1
+    m_Value: 0.1
+  highlightThresholds:
+    m_OverrideState: 1
+    m_Value: {x: 0.9, y: 1}
   edgeColor:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!114 &11400000
 MonoBehaviour:
