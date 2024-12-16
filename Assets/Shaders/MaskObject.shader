@@ -1,4 +1,4 @@
-Shader "Recall/MaskObject"
+Shader "DanielIlett/MaskObject"
 {
 	SubShader
 	{

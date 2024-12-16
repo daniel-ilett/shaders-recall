@@ -75,8 +75,6 @@
 			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 			#include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
-			Texture2D<uint2> _DepthTexture;
-
 			TEXTURE2D(_MaskedObjects);
 
 			float _Strength;
@@ -106,10 +104,12 @@
 				float isInWipeRadius = saturate(1.0f - step(_WipeSize, distance));
 
 				float timer = (sin((noise * _HighlightSize + _Time.y * _HighlightSpeed) * PI) + 1.0f) * 0.5f;
-				float3 recallTint = isInWipeRadius * mask * (_HighlightStrength.x + smoothstep(_HighlightThresholds.x, _HighlightThresholds.y, timer)  * _HighlightStrength.y) * _EdgeColor;
+				float3 recallColor = isInWipeRadius * mask * 
+					(_HighlightStrength.x + smoothstep(_HighlightThresholds.x, _HighlightThresholds.y, timer) * 
+					_HighlightStrength.y) * _EdgeColor;
 				float greyscaleColor = Luminance(col.rgb);
 
-				col.rgb = lerp(col.rgb + recallTint, greyscaleColor, _Strength * (1.0f - mask) * isInWipeRadius);
+				col.rgb = lerp(col.rgb + recallColor, greyscaleColor, _Strength * (1.0f - mask) * isInWipeRadius);
 
 				float isWipeRadiusEdge = step(_WipeSize - _WipeThickness, distance) * isInWipeRadius;
 				col.rgb = lerp(col.rgb, _EdgeColor, isWipeRadiusEdge);
@@ -120,15 +120,15 @@
 				float2 bottomUV = i.texcoord + float2(0.0f, 1.0f / -_ScreenParams.y);
 				float2 topUV = i.texcoord + float2(0.0f, 1.0f / _ScreenParams.y);
 
-				float3 col0 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, leftUV).rgb;
-				float3 col1 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, rightUV).rgb;
-				float3 col2 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, bottomUV).rgb;
-				float3 col3 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, topUV).rgb;
+				float col0 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, leftUV).r;
+				float col1 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, rightUV).r;
+				float col2 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, bottomUV).r;
+				float col3 = SAMPLE_TEXTURE2D(_MaskedObjects, sampler_LinearClamp, topUV).r;
 
-				float3 c0 = col1 - col0;
-				float3 c1 = col3 - col2;
+				float c0 = col1 - col0;
+				float c1 = col3 - col2;
 
-				float edgeCol = sqrt(dot(c0, c0) + dot(c1, c1));
+				float edgeCol = sqrt(c0 * c0 + c1 * c1);
 				edgeCol = step(0.1f, edgeCol);
 
 				col.rgb = lerp(col.rgb, _EdgeColor, edgeCol);

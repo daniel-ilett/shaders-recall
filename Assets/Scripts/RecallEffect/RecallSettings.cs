@@ -2,7 +2,7 @@
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-[System.Serializable, VolumeComponentMenu("Recall/Greyscale")]
+[System.Serializable, VolumeComponentMenu("Recall")]
 public sealed class RecallSettings : VolumeComponent, IPostProcessComponent
 {
     [Tooltip("Greyscale effect intensity.")]
@@ -40,7 +40,7 @@ public sealed class RecallSettings : VolumeComponent, IPostProcessComponent
     public Vector2Parameter highlightThresholds = new Vector2Parameter(new Vector2(0.9f, 1.0f));
 
     [Tooltip("Color of the boundary edges.")]
-    public ColorParameter edgeColor = new ColorParameter(Color.yellow);
+    public ColorParameter edgeColor = new ColorParameter(Color.yellow, true, true, true);
 
     public bool IsActive()
     {

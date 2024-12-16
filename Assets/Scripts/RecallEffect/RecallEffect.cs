@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -33,6 +32,7 @@ public class RecallEffect : ScriptableRendererFeature
     class RecallRenderPass : ScriptableRenderPass
     {
         private Material material;
+        private Material maskMaterial;
         private RTHandle tempTexHandle;
 
         private RTHandle maskedObjectsHandle;
@@ -43,7 +43,7 @@ public class RecallEffect : ScriptableRendererFeature
             renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
         }
 
-        private void CreateMaterial()
+        private void CreateMaterials()
         {
             var shader = Shader.Find("DanielIlett/Recall");
 
@@ -54,6 +54,16 @@ public class RecallEffect : ScriptableRendererFeature
             }
 
             material = new Material(shader);
+
+            shader = Shader.Find("DanielIlett/MaskObject");
+
+            if (shader == null)
+            {
+                Debug.LogError("Cannot find shader: \"DanielIlett/MaskObject\".");
+                return;
+            }
+
+            maskMaterial = new Material(shader);
         }
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
@@ -79,9 +89,9 @@ public class RecallEffect : ScriptableRendererFeature
                 return;
             }
 
-            if(material == null)
+            if(material == null || maskMaterial == null)
             {
-                CreateMaterial(); 
+                CreateMaterials(); 
             }
 
             CommandBuffer cmd = CommandBufferPool.Get();
@@ -119,11 +129,9 @@ public class RecallEffect : ScriptableRendererFeature
 
                 ShaderTagId shaderTagId = new ShaderTagId("UniversalForward");
 
-                Material mat = new Material(Shader.Find("Recall/MaskObject"));
-
                 DrawingSettings drawingSettingsLit = new DrawingSettings(shaderTagId, sortingSettings)
                 {
-                    overrideMaterial = mat
+                    overrideMaterial = maskMaterial
                 };
 
                 RendererListParams rendererParams = new RendererListParams(cullingResults, drawingSettingsLit, filteringSettings);
@@ -135,7 +143,7 @@ public class RecallEffect : ScriptableRendererFeature
 
                 DrawingSettings drawingSettingsUnlit = new DrawingSettings(shaderTagId, sortingSettings)
                 {
-                    overrideMaterial = mat
+                    overrideMaterial = maskMaterial
                 };
 
                 rendererParams = new RendererListParams(cullingResults, drawingSettingsUnlit, filteringSettings);
