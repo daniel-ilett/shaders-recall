@@ -119,7 +119,9 @@ public class RecallEffect : ScriptableRendererFeature
                 CoreUtils.ClearRenderTarget(cmd, ClearFlag.All, Color.black);
 
                 var camera = renderingData.cameraData.camera;
+
                 var cullingResults = renderingData.cullResults;
+
                 var sortingSettings = new SortingSettings(camera);
 
                 FilteringSettings filteringSettings = 
